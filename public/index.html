@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>My To-Do List</h1>
+        <div class="input-container">
+            <input type="text" id="todo-input" placeholder="Add a new task...">
+            <button id="add-btn">Add</button>
+        </div>
+        <div class="task-counter">
+            <p id="task-count">Tasks: 0</p>
+        </div>
+        <ul id="todo-list">
+            <!-- To-Do items will be dynamically added here -->
+        </ul>
+    </div>
+
+    <script>
+        const input = document.getElementById('todo-input');
+        const addButton = document.getElementById('add-btn');
+        const todoList = document.getElementById('todo-list');
+        const taskCountElement = document.getElementById('task-count');
+
+        // Load tasks from local storage on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const storedTasks = JSON.parse(localStorage.getItem('todos')) || [];
+            storedTasks.forEach(task => addTaskToDOM(task));
+            updateTaskCount();
+        });
+
+        // Add task on button click or Enter key press
+        addButton.addEventListener('click', addTask);
+        input.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                addTask();
+            }
+        });
+
+        function addTask() {
+            const task = input.value.trim();
+            if (task) {
+                addTaskToDOM(task);
+                saveTaskToLocalStorage(task);
+                input.value = '';
+                updateTaskCount();
+            }
+        }
+
+        // Add task to DOM
+        function addTaskToDOM(task) {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <span class="task-text">${task}</span>
+                <input class="edit-input" type="text" value="${task}" style="display: none;">
+                <div class="task-actions">
+                    <button class="edit-btn">Edit</button>
+                    <span class="delete-btn">&times;</span>
+                </div>
+            `;
+            todoList.appendChild(li);
+
+            const taskText = li.querySelector('.task-text');
+            const editInput = li.querySelector('.edit-input');
+            const editButton = li.querySelector('.edit-btn');
+
+            // Delete task event
+            li.querySelector('.delete-btn').addEventListener('click', () => {
+                removeTaskFromLocalStorage(taskText.textContent);
+                li.remove();
+                updateTaskCount();
+            });
+
+            // Edit task inline with Enter key support
+            editButton.addEventListener('click', () => toggleEditMode(taskText, editInput, editButton));
+            editInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    saveEditedTask(taskText, editInput, editButton);
+                }
+            });
+        }
+
+        // Toggle edit mode
+        function toggleEditMode(taskText, editInput, editButton) {
+            if (editButton.textContent === 'Edit') {
+                // Switch to editing mode
+                taskText.style.display = 'none';
+                editInput.style.display = 'block';
+                editInput.focus();
+                editButton.textContent = 'Save';
+            } else {
+                saveEditedTask(taskText, editInput, editButton);
+            }
+        }
+
+        // Save the edited task
+        function saveEditedTask(taskText, editInput, editButton) {
+            const updatedTask = editInput.value.trim();
+            if (updatedTask) {
+                updateTaskInLocalStorage(taskText.textContent, updatedTask);
+                taskText.textContent = updatedTask;
+            }
+            taskText.style.display = 'block';
+            editInput.style.display = 'none';
+            editButton.textContent = 'Edit';
+        }
+
+        // Save task to local storage
+        function saveTaskToLocalStorage(task) {
+            const tasks = JSON.parse(localStorage.getItem('todos')) || [];
+            tasks.push(task);
+            localStorage.setItem('todos', JSON.stringify(tasks));
+        }
+
+        // Remove task from local storage
+        function removeTaskFromLocalStorage(task) {
+            let tasks = JSON.parse(localStorage.getItem('todos')) || [];
+            tasks = tasks.filter(t => t !== task);
+            localStorage.setItem('todos', JSON.stringify(tasks));
+        }
+
+        // Update task in local storage
+        function updateTaskInLocalStorage(oldTask, newTask) {
+            let tasks = JSON.parse(localStorage.getItem('todos')) || [];
+            const taskIndex = tasks.indexOf(oldTask);
+            if (taskIndex > -1) {
+                tasks[taskIndex] = newTask;
+            }
+            localStorage.setItem('todos', JSON.stringify(tasks));
+        }
+
+        // Update task count
+        function updateTaskCount() {
+            const tasks = JSON.parse(localStorage.getItem('todos')) || [];
+            taskCountElement.textContent = `Tasks: ${tasks.length}`;
+        }
+    </script>
+</body>
+</html>
